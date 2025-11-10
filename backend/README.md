@@ -322,3 +322,111 @@ Notes and implementation hints
 - The project validates login inputs using `express-validator` in `user.routes.js` and checks credentials in `user.controller.js`/`user.service.js`.
 - On success the controller should return a JWT (e.g., created with `user.generateAuthToken()` or similar) for use in authenticated requests.
 - If you change the login flow, update this README accordingly.
+
+## Captain routes
+
+The captain endpoints are defined in `backend/routes/captain.routes.js`. They are typically mounted under `/captain`. The primary endpoint documented here is:
+
+    POST /captain/create
+
+Description
+---------
+Create/register a new captain (driver) with vehicle details. The endpoint accepts JSON and returns the created captain's id (and optionally a token) on success.
+
+Request headers
+---------------
+- Content-Type: application/json
+
+Request body (JSON)
+-------------------
+Expected JSON shape (field names follow the current code) — note the project uses the key name `vehical` in code:
+
+```json
+{
+  "fullname": {
+    "firstname": "string",
+    "lastname": "string"
+  },
+  "email": "captain@example.com",
+  "password": "secret123",
+  "vehical": {
+    "color": "red",
+    "plate": "ABC123",
+    "capacity": 4,
+    "vehicalType": "car"
+  }
+}
+```
+
+Validation rules (enforced server-side)
+-------------------------------------
+- `email`: required, must be a valid email address.
+- `fullname.firstname`: required, string, minimum 3 characters.
+- `password`: required, minimum length 6.
+- `vehical.color`: required, minimum length 3.
+- `vehical.plate`: required, minimum length 3.
+- `vehical.capacity`: required, integer, minimum 1.
+- `vehical.vehicalType`: required, must be one of `car`, `motorcycle`, or `auto`.
+
+Typical responses and status codes
+---------------------------------
+- 201 Created
+  - Description: Captain created successfully.
+  - Body (example):
+    ```json
+    {
+      "message": "Captain created successfully",
+      "captainId": "<captain id>"
+    }
+    ```
+
+- 400 Bad Request
+  - Description: Validation failed (missing or invalid fields).
+  - Body (example):
+    ```json
+    {
+      "errors": [ { "msg": "Invalid email address", "param": "email" } ]
+    }
+    ```
+
+- 409 Conflict
+  - Description: Email already exists (unique constraint violation).
+  - Body (example):
+    ```json
+    { "message": "Email already registered" }
+    ```
+
+- 500 Internal Server Error
+  - Description: Unexpected server error (DB or other). Returns an error message.
+
+Examples
+--------
+
+Sample request (valid):
+
+```json
+{
+  "fullname": { "firstname": "Sam", "lastname": "Driver" },
+  "email": "sam.driver@example.com",
+  "password": "driverPass123",
+  "vehical": { "color": "blue", "plate": "XYZ987", "capacity": 4, "vehicalType": "car" }
+}
+```
+
+Sample validation error response:
+
+```json
+{
+  "errors": [
+    { "msg": "Firstname must be at least 3 characters long", "param": "fullname.firstname" },
+    { "msg": "Plate must be at least 3 characters long", "param": "vehical.plate" }
+  ]
+}
+```
+
+Notes and implementation hints
+------------------------------
+- The route uses `express-validator` checks defined in `captain.routes.js` and stores data using `captain.service.js` and the Mongoose model in `backend/models` (e.g., `captain.model.js`).
+- The code currently uses the property name `vehical` (instead of the more common `vehicle`). If you prefer `vehicle`, update routes, services, and models consistently and then update this README.
+- Ensure passwords are hashed before saving (service/model should handle hashing). Also validate unique email at the DB/model layer.
+
