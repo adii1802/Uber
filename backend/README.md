@@ -113,3 +113,103 @@ Notes and implementation hints
 File location
 -------------
 This documentation file is located at `backend/README.md`.
+
+## POST /users/login
+
+Description
+---------
+Authenticate a user and return an access token (JWT). This endpoint accepts JSON and validates credentials.
+
+Base path
+---------
+This route is defined as `router.post('/login', ...)` in `user.routes.js` and is typically mounted at `/users`. The full endpoint URL is:
+
+    POST /users/login
+
+Request headers
+---------------
+- Content-Type: application/json
+
+Request body (JSON)
+-------------------
+The endpoint expects the following JSON structure:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "secret123"
+}
+```
+
+Validation rules (enforced server-side)
+-------------------------------------
+- `email`: required, must be a valid email address.
+- `password`: required, minimum length 6.
+
+Typical responses and status codes
+---------------------------------
+- 200 OK
+  - Description: Authentication successful.
+  - Body (example):
+    ```json
+    {
+      "message": "Login successful",
+      "token": "<jwt token>",
+      "userId": "<user id>"
+    }
+    ```
+
+- 400 Bad Request
+  - Description: Validation failed (missing/invalid fields).
+  - Body (example):
+    ```json
+    {
+      "errors": [
+        { "msg": "Invalid email address", "param": "email" },
+        { "msg": "Password must be at least 6 characters long", "param": "password" }
+      ]
+    }
+    ```
+
+- 401 Unauthorized
+  - Description: Authentication failed (wrong credentials).
+  - Body (example):
+    ```json
+    {
+      "message": "Invalid email or password"
+    }
+    ```
+
+- 500 Internal Server Error
+  - Description: Unexpected server error (DB or other). Returns an error message.
+
+Examples
+--------
+
+Sample request:
+
+```json
+{
+  "email": "ada@example.com",
+  "password": "password123"
+}
+```
+
+Sample authentication failure response:
+
+```json
+{
+  "message": "Invalid email or password"
+}
+```
+
+How the data is required (summary)
+----------------------------------
+- email (required): string, valid email format.
+- password (required): string, min length 6.
+
+Notes and implementation hints
+------------------------------
+- The project validates login inputs using `express-validator` in `user.routes.js` and checks credentials in `user.controller.js`/`user.service.js`.
+- On success the controller should return a JWT (e.g., created with `user.generateAuthToken()` or similar) for use in authenticated requests.
+- If you change the login flow, update this README accordingly.
