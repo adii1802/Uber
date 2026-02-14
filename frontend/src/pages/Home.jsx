@@ -1,18 +1,18 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 const Home = () => {
   return (
-    <div>
-      <div className='h-screen pt-8 pl-9 flex justify-between flex-col w-full bg-red'> 
-        <img className='w-16 ml-8' src="data:image/png;base64,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"  />
-        <div className='bg-white pb-7 py-4 px-4' >
-            <h2 className='text-3xl font-bold'>Get Started with Uber</h2>
-            <button className='w-full bg-black text-white py-3 rounded mt-4'>Continue</button>
+    <div >
+      <div className='bg-cover bg-center bg-[url(https://images.unsplash.com/photo-1619059558110-c45be64b73ae?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)] h-screen w-full pt-8 flex justify-between flex-col   '>
+        <img className=' w-16 ml-8' src="https://cdn-assets-eu.frontify.com/s3/frontify-enterprise-files-eu/eyJwYXRoIjoid2VhcmVcL2ZpbGVcLzhGbTh4cU5SZGZUVjUxYVh3bnEyLnN2ZyJ9:weare:F1cOF9Bps96cMy7r9Y2d7affBYsDeiDoIHfqZrbcxAw?width=1200&height=417"   />
+        <div className='bg-white pb-7 py-4 px-4'>
+             <h2 className='text-[30px] font-bold'>Get Started with Uber</h2>
+             <Link to="/login" className=' flex items-center justify-center w-full bg-black text-white py-3 rounded-lg mt-5'>Continue</Link>
         </div>
-
       </div>
     </div>
   )
 }
 
-export default Home   
+export default Home
