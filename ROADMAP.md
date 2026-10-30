@@ -4,7 +4,7 @@
 PHASE 1: Foundation & Architecture (Commits 1 to 8)
 ├── [x] Commit 01: Repository hygiene, root .gitignore fix, and node_modules cleanup
 ├── [x] Commit 02: Dependency alignment (Socket.IO, Leaflet, Multer, Zod, testing libraries)
-├── [ ] Commit 03: Environment configuration, database pooling, and graceful shutdown
+├── [x] Commit 03: Environment configuration, database pooling, and graceful shutdown
 ├── [ ] Commit 04: Unified User & Transporter schema with Role-Based Access Control (RBAC)
 ├── [ ] Commit 05: Fix legacy backend bugs (user.service syntax, controller-wrapper alignment)
 ├── [ ] Commit 06: Commercial vehicle categories and vehicle fleet schemas with GeoJSON

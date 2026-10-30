@@ -105,9 +105,60 @@
 * Local MongoDB Server verified listening on `127.0.0.1:27017` with `{ ok: 1 }` ping.
 
 #### 3. Remaining Issues for Subsequent Commits:
-* Connection resilience, pool configuration, graceful shutdown, and server startup sequencing to be implemented in Commit 03.
+* Connection resilience, pool configuration, graceful shutdown, and server startup sequencing implemented in Commit 03.
 
 #### 4. Next Planned Action:
 * **Commit 03:** Environment Configuration, Database Pooling & Graceful Shutdown.
 
+---
 
+### [Commit 03] - Database Connection Reliability, Startup Lifecycle & Graceful Shutdown
+* **Commit Hash:** `f968307db18536ca2cf398bf3c03dbfb1b4f4c22` (`f968307`)
+* **Author:** Principal Software Architect & Backend Lead
+* **Date:** 2026-10-30
+
+#### 1. Objectives & Changes Implemented:
+* **Database Connection Resilience & Lifecycle (`backend/db/db.js`):**
+  * Decoupled database connection from file imports to allow safe testing and deterministic startup.
+  * Preserved local MongoDB database name `uber` on `mongodb://127.0.0.1:27017/uber`.
+  * Configured connection pooling and timeout options with configurable environment variables:
+    * `maxPoolSize`: 10 (configurable via `MONGO_MAX_POOL_SIZE`)
+    * `minPoolSize`: 2 (configurable via `MONGO_MIN_POOL_SIZE`)
+    * `serverSelectionTimeoutMS`: 5000ms (`MONGO_SERVER_SELECTION_TIMEOUT_MS`)
+    * `socketTimeoutMS`: 45000ms (`MONGO_SOCKET_TIMEOUT_MS`)
+    * `maxIdleTimeMS`: 30000ms (`MONGO_MAX_IDLE_TIME_MS`)
+  * Implemented bounded exponential backoff for initial startup retries (`MONGO_MAX_RETRIES=5`, `MONGO_RETRY_DELAY_MS=1000`, max cap: 5000ms).
+  * Implemented in-flight connection promise reuse to eliminate duplicate simultaneous connection attempts.
+  * Added Mongoose lifecycle event listeners (`connected`, `disconnected`, `reconnected`, `error`) registered once to prevent listener leaks.
+  * Implemented URI credential sanitization (`sanitizeMongoUri`) to prevent password leaks in application logs.
+  * Implemented `getDatabaseHealth()` providing sanitized readiness and state telemetry.
+* **Deterministic Server Startup Lifecycle (`backend/server.js`):**
+  * Established strict sequencing: environment config -> Express app initialization -> MongoDB connection verification -> HTTP server listening.
+  * Implemented controlled graceful shutdown sequence for `SIGINT` and `SIGTERM`:
+    * Prevents multiple concurrent shutdown executions via `isShuttingDown` flag.
+    * Closes HTTP server first to allow in-flight requests to complete while rejecting new connections.
+    * Disconnects MongoDB cleanly after HTTP connections close.
+    * Configurable shutdown timeout (`SHUTDOWN_TIMEOUT_MS=10000`) with unref'd timer to guarantee process termination.
+  * Added process handlers for `uncaughtException` and `unhandledRejection` triggering graceful shutdown.
+* **Modular Express Application (`backend/app.js`):**
+  * Decoupled DB connection from app import.
+  * Added HTTP security middleware with `helmet()` and CORS with credentials support.
+  * Added HTTP request logging via `morgan` integrated with `winston` structured logger (`backend/utils/logger.js`).
+  * Implemented safe `GET /health` endpoint reporting uptime and database health state (returns HTTP 200 when connected, 503 when disconnected).
+  * Added standard 404 handler for unmatched routes and centralized error-handling middleware.
+  * Preserved existing domain routes (`/users`, `/captains`) and backward-compatible root endpoint (`GET /`).
+* **Environment Configuration (`backend/.env.example`):**
+  * Documented all new lifecycle, database pool, and timeout configuration settings with safe defaults.
+* **Automated Integration Test Suite (`backend/tests/health.test.js`):**
+  * Verified `GET /health` returns HTTP 200 and `{ status: 'UP', database: { isConnected: true, status: 'connected', readyState: 1, name: 'uber' } }`.
+  * Verified backward compatibility on `GET /` ('hellow world').
+  * Verified 404 handler for unknown endpoints.
+  * Verified connection state reporting and idempotency of `connectDB()`.
+
+#### 2. Validation & Quality Checks:
+* `backend`: Ran `npx jest tests/health.test.js --runInBand --forceExit` — 5/5 tests passed (100% pass rate).
+* Local Server Smoke Test: Ran `node server.js` — verified startup logs, HTTP connection to `/health` (`UP`), `/` (`200 OK`), and clean shutdown.
+* MongoDB Integrity: Local `uber` database intact on `127.0.0.1:27017` with zero collections dropped or modified.
+
+#### 3. Next Planned Action:
+* **Commit 04:** Unified User & Transporter schema with Role-Based Access Control (RBAC).
