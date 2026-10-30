@@ -166,7 +166,7 @@
 ---
 
 ### [Commit 04] - Authentication Architecture, RBAC & Authorization Middleware
-* **Commit Hash:** Pending commit
+* **Commit Hash:** `bc1fde20ef77732d847aa1fa25d97f26fdbbc6f4` (`bc1fde2`)
 * **Author:** Principal Software Architect & Backend Lead
 * **Date:** 2026-10-30
 
