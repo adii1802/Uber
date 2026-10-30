@@ -72,3 +72,42 @@
   * New Untracked Components: `frontend/src/components/CaptainDetails.jsx`, `frontend/src/components/ConfirmRidePopUp.jsx`, `frontend/src/components/FinishRide.jsx`, `frontend/src/components/RidePopUp.jsx`, `frontend/src/pages/CaptainRiding.jsx`, `frontend/src/pages/Riding.jsx`.
 * Resulted in a 100% clean Git working directory while securing all development work in history.
 
+---
+
+### [Commit 02] - Dependency Alignment & Environment Modernization
+* **Commit Hash:** `78c75ac411c5e9336423984ca9eb8589c3bc8e08` (`78c75ac`)
+* **Author:** Principal Software Architect & DevOps Lead
+* **Date:** 2026-10-30
+
+#### 1. Objectives & Changes Implemented:
+* **Backend Production Infrastructure:**
+  * Added `socket.io` (v4.8.4) for real-time WebSockets telemetry and dispatch.
+  * Added `multer` (v2.5.0) for commercial document and cargo image uploads.
+  * Added `zod` (v4.6.7) for schema validation.
+  * Added `helmet` (v8.3.0) for HTTP security headers.
+  * Added `express-rate-limit` (v8.7.2) for API abuse prevention.
+  * Added `winston` (v3.19.0) and `morgan` (v1.12.1) for structured production and HTTP request logging.
+  * Preserved `mongoose` at `^8.19.3` and all existing authentication/JWT libraries.
+* **Backend Dev & Test Infrastructure:**
+  * Added `jest` (v30.5.2) and `supertest` (v7.3.1).
+  * Added npm scripts in `backend/package.json`: `"start": "node server.js"`, `"dev": "node --watch server.js"`, `"test": "jest --detectOpenHandles"`.
+* **Frontend Real-Time & Mapping Infrastructure:**
+  * Added `socket.io-client` (v4.8.4) for bidirectional communication with backend.
+  * Added `leaflet` (v1.9.4) & `react-leaflet` (v5.0.0) for interactive map and route visualizer.
+  * Added `lucide-react` (v1.65.0) for modern logistics UI icons alongside `remixicon`.
+* **Database & Baseline Integrity:**
+  * Existing local MongoDB configuration (`mongodb://127.0.0.1:27017/uber`) completely preserved and untouched.
+  * Zero database migrations or destructive modifications executed.
+
+#### 2. Validation & Quality Checks:
+* `backend`: `npm ls --depth=0` returned 0 missing dependencies with all packages resolved cleanly.
+* `frontend`: `npm run build` compiled the Vite production bundle in 4.67s without errors.
+* Local MongoDB Server verified listening on `127.0.0.1:27017` with `{ ok: 1 }` ping.
+
+#### 3. Remaining Issues for Subsequent Commits:
+* Connection resilience, pool configuration, graceful shutdown, and server startup sequencing to be implemented in Commit 03.
+
+#### 4. Next Planned Action:
+* **Commit 03:** Environment Configuration, Database Pooling & Graceful Shutdown.
+
+
