@@ -44,3 +44,18 @@
 
 #### 4. Next Planned Action:
 * **Commit 02:** Dependency Alignment & Modernization (`socket.io`, `leaflet`, `multer`, `zod`, testing libraries).
+
+---
+
+### [Checkpoint Commit] - Preserve Existing Captain & Ride UI Work
+* **Commit Hash:** `ba6e95c4793bdf5c1b6973347c61717be547fbc8` (`ba6e95c`)
+* **Author:** Principal Software Architect & DevOps Lead
+* **Date:** 2026-10-30
+
+#### 1. Objectives & Changes Implemented:
+* Committed all 12 pre-existing uncommitted files (6 modified files + 6 untracked components) from prior development into a dedicated checkpoint commit.
+* Files committed:
+  * Modified: `frontend/src/App.jsx`, `frontend/src/components/ConfirmRide.jsx`, `frontend/src/components/WaitingForDriver.jsx`, `frontend/src/pages/CaptainHome.jsx`, `frontend/src/pages/CaptainSignup.jsx`, `frontend/src/pages/Home.jsx`.
+  * New Untracked Components: `frontend/src/components/CaptainDetails.jsx`, `frontend/src/components/ConfirmRidePopUp.jsx`, `frontend/src/components/FinishRide.jsx`, `frontend/src/components/RidePopUp.jsx`, `frontend/src/pages/CaptainRiding.jsx`, `frontend/src/pages/Riding.jsx`.
+* Resulted in a 100% clean Git working directory while securing all development work in history.
+
