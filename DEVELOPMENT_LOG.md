@@ -287,7 +287,7 @@
 ---
 
 ### Commit 07: Dispatch Engine & Transporter Job Assignment
-* **Commit Hash:** Pending
+* **Commit Hash:** `5e91a21`
 * **Author:** Senior Distributed-Systems Engineer, Logistics Domain Architect & Production Backend Developer
 * **Date:** 2026-10-31
 
