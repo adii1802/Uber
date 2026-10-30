@@ -1,0 +1,46 @@
+# CargoRide – Engineering Development Log
+
+## Project Information
+* **Product:** CargoRide (On-Demand Commercial Cargo & Logistics Platform - India)
+* **Branch:** `feature/cargoride-platform`
+* **Base Commit:** `ae9e0b1` (`user UI completed`)
+* **Backup Reference:** `backup/pre-cargoride-head` (`ae9e0b1`)
+
+---
+
+## Log Entries
+
+### [Commit 01] - Repository Hygiene, Git Safety & Project Preparation
+* **Commit Hash:** `7753d91582483dfb27f80f3e4cffe61e729d5857` (`7753d91`)
+* **Author:** Principal Software Architect & DevOps Lead
+* **Date:** 2026-10-30
+
+#### 1. Objectives & Changes Implemented:
+* **Git Safety & Isolation:**
+  * Verified working tree integrity and identified 6 pre-existing modified files and 6 untracked components.
+  * Created safety reference branch `backup/pre-cargoride-head` pointing at `ae9e0b1` before any modifications.
+  * Created and checked out active development branch `feature/cargoride-platform`.
+* **Root Gitignore Restoration:**
+  * Renamed and replaced invalid root file `gitignore` (missing leading dot) with comprehensive `.gitignore`.
+  * Added rules for `node_modules/`, `.env*` (except `!.env.example`), `dist/`, `build/`, `coverage/`, logs, OS artifacts, and IDE configs.
+* **Tracked Node Modules Cleanup:**
+  * Safely removed **3,144** tracked `backend/node_modules/` files from Git index cache via `git rm -r --cached`.
+  * Verified local `backend/node_modules` remains on disk and dependencies are fully intact.
+* **Environment Security:**
+  * Identified that `backend/.env` and `frontend/.env` had previously been committed to Git in commit `ae9e0b1`.
+  * Safely removed both `.env` files from Git tracking without deleting local files.
+  * Created clean, sanitized `.env.example` templates for both `backend` and `frontend`.
+* **Preservation of Existing Work:**
+  * Guaranteed 100% preservation of all existing user modifications and untracked components.
+
+#### 2. Validation & Quality Checks:
+* `backend`: Executed `npm ls --depth=0` — all 9 core dependencies resolved cleanly without errors.
+* `frontend`: Executed `npm run build` — Vite production bundle compiled cleanly in 50.98s (`119 modules transformed`).
+* Verified MongoDB Community Server (v9.0.4) active service running and listening on `127.0.0.1:27017` with ping `{ ok: 1 }`.
+
+#### 3. Remaining Issues for Subsequent Commits:
+* Existing untracked components in `frontend/src/components/` and `frontend/src/pages/` contain syntax/prop bugs (`LookingForDriver.jsx` missing props, `CaptainDetails.jsx` hardcoded cards, etc.) to be refactored into the CargoRide modular architecture in Phase 2 & 3.
+* Legacy backend bug in `user.service.js` (typo/reference error) and controller-wrapper contract mismatch to be fixed in Commit 05.
+
+#### 4. Next Planned Action:
+* **Commit 02:** Dependency Alignment & Modernization (`socket.io`, `leaflet`, `multer`, `zod`, testing libraries).
