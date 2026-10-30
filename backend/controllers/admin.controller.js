@@ -5,72 +5,6 @@ const captainModel = require('../models/captain.model');
 const authService = require('../services/auth.service');
 const ROLES = require('../constants/roles');
 
-/**
- * Controlled Initial Admin Bootstrap.
- * Securely initializes the initial administrator using a shared secret.
- * Permanently disabled once the initial administrator account is established.
- */
-module.exports.bootstrapAdmin = async (req, res) => {
-  try {
-    const bootstrapSecret = req.headers['x-admin-bootstrap-secret'];
-    const expectedSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
-
-    if (!expectedSecret || bootstrapSecret !== expectedSecret) {
-      return res.status(403).json({
-        message: 'Forbidden: Invalid or missing administrative bootstrap secret',
-      });
-    }
-
-    const existingAdminCount = await adminModel.countDocuments();
-    if (existingAdminCount > 0) {
-      return res.status(403).json({
-        message: 'Bootstrap is permanently disabled. Administrator accounts already exist.',
-      });
-    }
-
-    const { firstname, lastname, email, password } = req.body;
-    if (!firstname || !email || !password) {
-      return res.status(400).json({
-        message: 'Firstname, email, and password are required for admin bootstrap',
-      });
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    const hashedPassword = await adminModel.hashPassword(password);
-
-    const admin = await adminModel.create({
-      fullname: {
-        firstname: firstname.trim(),
-        lastname: lastname ? lastname.trim() : '',
-      },
-      email: normalizedEmail,
-      password: hashedPassword,
-      role: ROLES.ADMIN,
-      isSuperAdmin: true,
-      isActive: true,
-    });
-
-    const token = admin.generateAuthToken();
-
-    res
-      .status(201)
-      .cookie('token', token, authService.getAuthCookieOptions())
-      .json({
-        message: 'Administrator account bootstrapped successfully',
-        admin: {
-          _id: admin._id,
-          fullname: admin.fullname,
-          email: admin.email,
-          role: admin.role,
-          isSuperAdmin: admin.isSuperAdmin,
-          isActive: admin.isActive,
-        },
-        token,
-      });
-  } catch (error) {
-    res.status(500).json({ message: 'Internal server error during bootstrap' });
-  }
-};
 
 /**
  * Admin Login
@@ -113,7 +47,6 @@ module.exports.loginAdmin = async (req, res) => {
           isSuperAdmin: admin.isSuperAdmin,
           isActive: admin.isActive,
         },
-        token,
       });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
@@ -246,17 +179,13 @@ module.exports.toggleAccountStatus = async (req, res) => {
  */
 module.exports.logoutAdmin = async (req, res) => {
   try {
-    const token =
-      req.cookies?.token ||
-      (req.headers.authorization &&
-        req.headers.authorization.startsWith('Bearer ') &&
-        req.headers.authorization.split(' ')[1]);
+    const token = req.cookies?.token;
 
     if (token) {
       await authService.revokeToken(token);
     }
 
-    res.clearCookie('token', { path: '/' });
+    res.clearCookie('token', authService.getClearCookieOptions());
     res.status(200).json({ message: 'Administrator logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });

@@ -107,13 +107,36 @@ const resolveAccount = async (id, role) => {
 /**
  * Standard HTTP-only Cookie Options for JWT
  */
-const getAuthCookieOptions = () => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  path: '/',
-});
+const getAuthCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  let sameSite = process.env.COOKIE_SAME_SITE || (isProduction ? 'none' : 'lax');
+  let secure = isProduction || process.env.COOKIE_SECURE === 'true';
+  if (sameSite.toLowerCase() === 'none' && !secure) {
+    secure = true;
+  }
+  return {
+    httpOnly: true,
+    secure,
+    sameSite,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/',
+  };
+};
+
+const getClearCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  let sameSite = process.env.COOKIE_SAME_SITE || (isProduction ? 'none' : 'lax');
+  let secure = isProduction || process.env.COOKIE_SECURE === 'true';
+  if (sameSite.toLowerCase() === 'none' && !secure) {
+    secure = true;
+  }
+  return {
+    httpOnly: true,
+    secure,
+    sameSite,
+    path: '/',
+  };
+};
 
 module.exports = {
   hashPassword,
@@ -124,4 +147,5 @@ module.exports = {
   revokeToken,
   resolveAccount,
   getAuthCookieOptions,
+  getClearCookieOptions,
 };

@@ -5,11 +5,8 @@ const { body } = require('express-validator');
 const adminController = require('../controllers/admin.controller');
 const { requireAdmin } = require('../middlewares/auth.middleware');
 
-/**
- * INITIAL ADMINISTRATIVE BOOTSTRAP
- * Protected by secret header and disabled if an admin already exists.
- */
-router.post('/bootstrap', adminController.bootstrapAdmin);
+
+const vehicleController = require('../controllers/vehicle.controller');
 
 /**
  * ADMIN LOGIN
@@ -40,5 +37,19 @@ router.post(
 );
 router.patch('/accounts/:id/status', requireAdmin, adminController.toggleAccountStatus);
 router.get('/logout', requireAdmin, adminController.logoutAdmin);
+
+/**
+ * COMMERCIAL FLEET VERIFICATION & ADMINISTRATION
+ */
+router.get('/vehicles', requireAdmin, vehicleController.listAdminVehicles);
+router.get('/vehicles/:id', requireAdmin, vehicleController.getAdminVehicleDetails);
+router.patch(
+  '/vehicles/:id/verify',
+  [
+    requireAdmin,
+    body('decision').isIn(['APPROVED', 'REJECTED']).withMessage('Decision must be APPROVED or REJECTED'),
+  ],
+  vehicleController.verifyVehicle
+);
 
 module.exports = router;

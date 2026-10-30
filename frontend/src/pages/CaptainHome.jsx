@@ -44,11 +44,24 @@ useGSAP(function(){
 
   return (
       <div className='h-screen'>
-      <div className='fixed p-6 top-0 flex items-center justify-between w-screen'>
-        <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" />
-         <Link to="/home" className=' h-10 w-10 bg-white flex items-center justify-center rounded-full'>
-         <i className='ri-logout-box-r-line text-lg font-medium'></i>
-       </Link>
+      <div className='fixed p-6 top-0 flex items-center justify-between w-screen z-20'>
+        <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="Logo" />
+        <div className='flex items-center gap-3'>
+          <Link
+            to="/captain/fleet"
+            className='h-10 px-3.5 bg-white shadow-md flex items-center justify-center rounded-full text-xs font-semibold text-slate-800 hover:bg-slate-50 transition gap-1.5'
+          >
+            <i className='ri-truck-line text-base text-emerald-600'></i>
+            <span>Fleet</span>
+          </Link>
+          <Link
+            to="/captain/logout"
+            className='h-10 w-10 bg-white shadow-md flex items-center justify-center rounded-full text-slate-700 hover:bg-slate-50 transition'
+            title="Logout"
+          >
+            <i className='ri-logout-box-r-line text-lg font-medium'></i>
+          </Link>
+        </div>
       </div>
 
       <div className='h-1/2'>

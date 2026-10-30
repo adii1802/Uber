@@ -49,7 +49,6 @@ module.exports.registerUser = async (req, res) => {
           role: user.role,
           isActive: user.isActive,
         },
-        token,
       });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
@@ -97,7 +96,6 @@ module.exports.loginUser = async (req, res) => {
           role: user.role,
           isActive: user.isActive,
         },
-        token,
       });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
@@ -170,17 +168,13 @@ module.exports.getCurrentSession = async (req, res) => {
  */
 module.exports.logoutUser = async (req, res) => {
   try {
-    const token =
-      req.cookies?.token ||
-      (req.headers.authorization &&
-        req.headers.authorization.startsWith('Bearer ') &&
-        req.headers.authorization.split(' ')[1]);
+    const token = req.cookies?.token;
 
     if (token) {
       await authService.revokeToken(token);
     }
 
-    res.clearCookie('token', { path: '/' });
+    res.clearCookie('token', authService.getClearCookieOptions());
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });

@@ -17,15 +17,19 @@ const UserLogin = () => {
     e.preventDefault();
     const userData = { email, password };
     
-    const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, userData);
-    if (response.status === 200) {
-      const data = response.data;
-      setUserData(data.user);
-      localStorage.setItem('token', data.token); // Store token
-     navigate('/home');
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, userData);
+      if (response.status === 200) {
+        const data = response.data;
+        setUser(data.user);
+        setUserData(data.user);
+        navigate('/home');
+      }
+    } catch (error) {
+      console.error('Login error:', error.response?.data || error.message);
     }
-    setEmail('')
-    setPassword('')
+    setEmail('');
+    setPassword('');
   }
   return (
     <div className='p-7 h-screen flex flex-col justify-between'>

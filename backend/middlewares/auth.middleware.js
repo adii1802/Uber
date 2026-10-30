@@ -2,20 +2,13 @@ const authService = require('../services/auth.service');
 const ROLES = require('../constants/roles');
 
 /**
- * Safely extract token from cookies or Bearer Authorization header
+ * Extract authentication token exclusively from HTTP-only cookies.
+ * Bearer token headers in browser requests are rejected to eliminate XSS token theft.
  */
 const getTokenFromRequest = (req) => {
   if (req.cookies && req.cookies.token) {
     return req.cookies.token;
   }
-
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer ')
-  ) {
-    return req.headers.authorization.split(' ')[1];
-  }
-
   return null;
 };
 

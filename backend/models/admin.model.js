@@ -49,6 +49,12 @@ const adminSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Database-level single-super-admin partial unique index
+adminSchema.index(
+  { isSuperAdmin: 1 },
+  { unique: true, partialFilterExpression: { isSuperAdmin: true } }
+);
+
 adminSchema.methods.generateAuthToken = function () {
   const token = jwt.sign(
     {
