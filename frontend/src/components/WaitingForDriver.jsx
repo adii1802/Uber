@@ -6,6 +6,7 @@ const WaitingForDriver = (props) => {
        <h5 className='p-1 text-center w-[90%] absolute top-0' onClick={()=>{
           props.setWaitingForDriver(false)
         }}><i className=' text-3xl text-gray-200 ri-arrow-down-wide-line'></i></h5>
+
         <div className='flex items-center justify-between'>
           <img className='h-12' src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR8uNE6JTdWQeZyw7PajPadusxZgpEK3ENYPOCr_4wsl00DFny2eWf_sHE&s"  />
           <div className='text-right'>
@@ -14,6 +15,7 @@ const WaitingForDriver = (props) => {
             <p className='text-sm text-gray-600'>Maruti Sujuki Alto</p>
           </div>
         </div>
+        
         <div className='flex justify-between flex-col gap-2 items-center'>
                <div className='w-full mt-5'>
                   <div className='flex items-center gap-5 p-3 border-b-2'>

@@ -151,10 +151,7 @@ useGSAP(function(){
       </div>
 
       <div ref={vehiclePanelRef} className='fixed w-full z-10 translate-y-full bottom-0 bg-white py-10 px-3 pt-12'>
-      <VehiclePanel 
-        setConfirmRidePanel={setConfirmRidePanel} 
-        setVehiclePanel={setVehiclePanel} 
-      />
+        <VehiclePanel setConfirmRidePanel={setConfirmRidePanel}  setVehiclePanel={setVehiclePanel} />
       </div>
 
       <div ref={confirmRidePanelRef} className='fixed w-full z-10 translate-y-full bottom-0 bg-white py-6 px-3 pt-12'>
