@@ -34,11 +34,11 @@ const CaptainSignup = () => {
         email: email,
         password: password,
         vehicle: {
-          color: vehicleColor,
-          plate: vehiclePlate,
-          capacity: vehicleCapacity,
-          vehicleType: vehicleType
-        }
+         color: vehicleColor,
+         plate: vehiclePlate,
+         capacity: Number(vehicleCapacity),
+         vehicleType: vehicleType
+}
       }
       const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, captainData);
       if (response.status === 201) {
@@ -150,7 +150,7 @@ const CaptainSignup = () => {
       </form>
          </div>
          <div>
-          <p className='text-[6px] leading-tight'>This site is protected by reCAPTCHA and the <span className='underline'> Google Privacy
+          <p className='text-[6px] mt-6 leading-tight'>This site is protected by reCAPTCHA and the <span className='underline'> Google Privacy
              Policy</span> and <span className='underline'>Terms of Service apply</span>.</p>
          </div> 
     </div>
