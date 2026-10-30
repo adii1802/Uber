@@ -6,6 +6,19 @@
 * **Base Commit:** `ae9e0b1` (`user UI completed`)
 * **Backup Reference:** `backup/pre-cargoride-head` (`ae9e0b1`)
 
+## Database Configuration & Baseline Integrity
+* **Engine:** MongoDB Community Server (v9.0.4) Running Locally as Windows Service (`MongoDB`)
+* **Host & Port:** `127.0.0.1:27017`
+* **Connection String Format:** `mongodb://127.0.0.1:27017/<database>`
+* **Database Name:** Preserved existing database (`uber`)
+* **Client Driver:** Mongoose `^8.19.3`
+* **State & Integrity:** 
+  * Local database verified active with `db.runCommand({ ping: 1 })` -> `{ ok: 1 }`.
+  * Preserved local MongoDB configuration without cloud substitution.
+  * Zero collections or documents dropped, reset, or modified.
+  * Zero destructive migrations or seed scripts executed.
+  * Connection architecture strictly preserved for Commit 02; resilience improvements scheduled for Commit 03.
+
 ---
 
 ## Log Entries
