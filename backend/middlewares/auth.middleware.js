@@ -1,30 +1,22 @@
-const jwt = require('jsonwebtoken');
-const userModel = require('../models/user.model');
-const captainModel = require('../models/captain.model');
-const blackListTokenModel = require('../models/blacklistToken.model');
+const authService = require('../services/auth.service');
+const ROLES = require('../constants/roles');
 
 /**
- * Extract token safely from cookies or Authorization header
+ * Extract authentication token exclusively from HTTP-only cookies.
+ * Bearer token headers in browser requests are rejected to eliminate XSS token theft.
  */
 const getTokenFromRequest = (req) => {
   if (req.cookies && req.cookies.token) {
     return req.cookies.token;
   }
-
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer ')
-  ) {
-    return req.headers.authorization.split(' ')[1];
-  }
-
   return null;
 };
 
 /**
- * USER AUTH MIDDLEWARE
+ * Primary Authentication Middleware.
+ * Verifies JWT signature, blacklist status, and resolves the trusted account from DB.
  */
-module.exports.authUser = async (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   try {
     const token = getTokenFromRequest(req);
 
@@ -32,52 +24,137 @@ module.exports.authUser = async (req, res, next) => {
       return res.status(401).json({ message: 'Unauthorized: No token provided' });
     }
 
-    const isBlacklisted = await blackListTokenModel.findOne({ token });
-    if (isBlacklisted) {
-      return res.status(401).json({ message: 'Unauthorized: Token blacklisted' });
+    const isRevoked = await authService.isTokenBlacklisted(token);
+    if (isRevoked) {
+      return res.status(401).json({ message: 'Unauthorized: Token has been revoked' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const user = await userModel.findById(decoded._id);
-    if (!user) {
-      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    let decoded;
+    try {
+      decoded = authService.verifyToken(token);
+    } catch (err) {
+      return res.status(401).json({ message: 'Unauthorized: Invalid or expired token' });
     }
 
-    req.user = user;
+    const accountId = decoded.id || decoded._id;
+    const resolved = await authService.resolveAccount(accountId, decoded.role);
+
+    if (!resolved || !resolved.account) {
+      return res.status(401).json({ message: 'Unauthorized: Account not found' });
+    }
+
+    const { account, role } = resolved;
+
+    if (account.isActive === false) {
+      return res.status(403).json({ message: 'Forbidden: Account is deactivated' });
+    }
+
+    // Attach trusted identity details to request
+    req.auth = {
+      id: account._id,
+      email: account.email,
+      role: role || account.role,
+    };
+    req.user = account;
+    req.account = account;
+
+    // Backward compatibility for captain routes
+    if (role === ROLES.TRANSPORTER) {
+      req.captain = account;
+    }
+
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Unauthorized: Invalid or expired token' });
+    return res.status(401).json({ message: 'Unauthorized: Authentication failed' });
   }
 };
 
 /**
- * CAPTAIN AUTH MIDDLEWARE
+ * Role-Based Access Control (RBAC) Guard Middleware Factory.
+ * Enforces that the authenticated user possesses one of the allowed roles.
  */
-module.exports.authCaptain = async (req, res, next) => {
-  try {
-    const token = getTokenFromRequest(req);
-
-    if (!token) {
-      return res.status(401).json({ message: 'Unauthorized: No token provided' });
+const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.auth || !req.auth.role) {
+      return res.status(401).json({ message: 'Unauthorized: Authentication required' });
     }
 
-    const isBlacklisted = await blackListTokenModel.findOne({ token });
-    if (isBlacklisted) {
-      return res.status(401).json({ message: 'Unauthorized: Token blacklisted' });
+    if (!allowedRoles.includes(req.auth.role)) {
+      return res.status(403).json({
+        message: 'Forbidden: Insufficient permissions for this resource',
+      });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const captain = await captainModel.findById(decoded._id);
-    if (!captain) {
-      return res.status(401).json({ message: 'Unauthorized: Captain not found' });
-    }
-
-    req.captain = captain;
     next();
-  } catch (error) {
-    return res.status(401).json({ message: 'Unauthorized: Invalid or expired token' });
-  }
+  };
 };
 
+/**
+ * Object-level Authorization Middleware Factory.
+ * Ensures the requesting user owns the target resource or is an ADMIN.
+ */
+const authorizeResourceOwner = (getOwnerIdFn) => {
+  return (req, res, next) => {
+    if (!req.auth) {
+      return res.status(401).json({ message: 'Unauthorized: Authentication required' });
+    }
+
+    if (req.auth.role === ROLES.ADMIN) {
+      return next(); // Admins have elevated access
+    }
+
+    const targetOwnerId =
+      typeof getOwnerIdFn === 'function' ? getOwnerIdFn(req) : req.params.id;
+
+    if (!targetOwnerId || req.auth.id.toString() !== targetOwnerId.toString()) {
+      return res.status(403).json({
+        message: 'Forbidden: You cannot access or modify another account’s resources',
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Convenience Middleware Shortcuts
+ */
+const requireCustomer = [authenticateToken, authorizeRoles(ROLES.CUSTOMER)];
+const requireTransporter = [authenticateToken, authorizeRoles(ROLES.TRANSPORTER)];
+const requireAdmin = [authenticateToken, authorizeRoles(ROLES.ADMIN)];
+
+/**
+ * Backward-compatible User Auth Middleware
+ */
+const authUser = async (req, res, next) => {
+  await authenticateToken(req, res, () => {
+    if (req.auth.role !== ROLES.CUSTOMER) {
+      return res.status(403).json({ message: 'Forbidden: Customer access only' });
+    }
+    next();
+  });
+};
+
+/**
+ * Backward-compatible Captain Auth Middleware
+ */
+const authCaptain = async (req, res, next) => {
+  await authenticateToken(req, res, () => {
+    if (req.auth.role !== ROLES.TRANSPORTER) {
+      return res.status(403).json({ message: 'Forbidden: Transporter access only' });
+    }
+    next();
+  });
+};
+
+module.exports = {
+  getTokenFromRequest,
+  authenticateToken,
+  authorizeRoles,
+  authorizeResourceOwner,
+  requireCustomer,
+  requireTransporter,
+  requireAdmin,
+  authUser,
+  authCaptain,
+};

@@ -44,7 +44,6 @@ const CaptainSignup = () => {
       if (response.status === 201) {
         const data = response.data; 
         setCaptain(data.captain);
-        localStorage.setItem('token', data.token);
         navigate('/captain-home');
       }
 
@@ -137,9 +136,11 @@ const CaptainSignup = () => {
            className='bg-[#eeeeee]  w-1/2  rounded px-4 py-2 border  text-lg placeholder:text-base' 
            >
             <option value="">Select Vehicle Type</option>
-            <option value="car">Car</option>
-            <option value="auto">Auto</option>
-            <option value="moto">Moto</option>
+            <option value="mini-truck">Mini Truck (Tata Ace)</option>
+            <option value="pickup">Pickup Truck (Bolero)</option>
+            <option value="auto">Three-Wheeler Cargo</option>
+            <option value="motorcycle">Motorcycle</option>
+            <option value="car">Car / Van</option>
            </select>
         </div>
         

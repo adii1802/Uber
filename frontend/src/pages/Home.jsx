@@ -1,4 +1,5 @@
 import React, {  useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {useGSAP} from '@gsap/react'
 import gsap from 'gsap'
 import 'remixicon/fonts/remixicon.css'
@@ -99,7 +100,35 @@ useGSAP(function(){
 
   return (
     <div className='h-screen relative overflow-hidden'>
-      <img className='w-16 z-10 absolute left-5 top-5 ' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
+      <div className='fixed p-6 top-0 flex items-center justify-between w-screen z-20'>
+        <div className='flex items-center gap-2 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full shadow-md'>
+          <span className='font-black tracking-wider text-sm text-amber-500'>CARGORIDE</span>
+          <span className='text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded'>Freight</span>
+        </div>
+        <div className='flex items-center gap-2.5'>
+          <Link
+            to="/book-cargo"
+            className='h-10 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md flex items-center justify-center rounded-full text-xs font-bold transition gap-1.5'
+          >
+            <i className='ri-truck-fill text-sm'></i>
+            <span>Book Cargo</span>
+          </Link>
+          <Link
+            to="/my-bookings"
+            className='h-10 px-3.5 bg-white shadow-md flex items-center justify-center rounded-full text-xs font-semibold text-slate-800 hover:bg-slate-50 transition gap-1.5'
+          >
+            <i className='ri-file-list-3-line text-sm text-slate-600'></i>
+            <span>My Bookings</span>
+          </Link>
+          <Link
+            to="/user/logout"
+            className='h-10 w-10 bg-white shadow-md flex items-center justify-center rounded-full text-slate-700 hover:bg-slate-50 transition'
+            title="Logout"
+          >
+            <i className='ri-logout-box-r-line text-base'></i>
+          </Link>
+        </div>
+      </div>
       <div onClick={()=>{
         setVehiclePanel(false)
       }} className='h-screen w-screen'>

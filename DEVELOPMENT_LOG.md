@@ -162,3 +162,174 @@
 
 #### 3. Next Planned Action:
 * **Commit 04:** Unified User & Transporter schema with Role-Based Access Control (RBAC).
+
+---
+
+### [Commit 04] - Authentication Architecture, RBAC & Authorization Middleware
+* **Commit Hash:** `bc1fde20ef77732d847aa1fa25d97f26fdbbc6f4` (`bc1fde2`)
+* **Author:** Principal Software Architect & Backend Lead
+* **Date:** 2026-10-30
+
+#### 1. Objectives & Changes Implemented:
+* **Canonical Role Definitions (`backend/constants/roles.js`):**
+  * Established canonical roles: `CUSTOMER`, `TRANSPORTER`, and `ADMIN`.
+  * Enforced across database schemas, JWT token payloads, authorization middleware, and frontend guards.
+* **Identity Architecture & Database Schemas:**
+  * Preserved existing separate collections (`users`, `captains`) to guarantee zero data loss, eliminate duplicate identities, and prevent account collisions.
+  * `User` (`backend/models/user.model.js`): Added immutable `role: 'CUSTOMER'`, `phone`, `isActive: Boolean (default: true)`, with updated JWT payload containing `id`, `_id`, `email`, and `role`.
+  * `Captain` (`backend/models/captain.model.js`): Added immutable `role: 'TRANSPORTER'`, `phone`, `isActive: Boolean (default: true)`, normalized commercial vehicle types, with updated JWT payload.
+  * `Admin` (`backend/models/admin.model.js`): Created dedicated administrative collection (`admins`) with role `'ADMIN'`, `isSuperAdmin`, `isActive`, and secure password hashing. Completely isolated from public registration.
+* **Centralized Authentication Service (`backend/services/auth.service.js`):**
+  * Consolidated bcrypt password hashing/comparison, JWT signing/verification, and account resolution by role and ID.
+  * Integrated token revocation checking and blacklisting via `blacklistTokenModel`.
+  * Configured standardized secure HTTP-only cookie options.
+* **Reusable RBAC & Authorization Middleware (`backend/middlewares/auth.middleware.js`):**
+  * `authenticateToken`: Validates JWT, verifies token is not revoked/blacklisted, confirms account is active (`isActive !== false`), attaches trusted identity to `req.auth`, `req.user`, and `req.account`.
+  * `authorizeRoles(...roles)`: Enforces role permissions (returns 403 Forbidden on insufficient role).
+  * `authorizeResourceOwner(getOwnerIdFn)`: Object-level authorization ensuring accounts can only access their own private resources unless an Admin.
+  * Convenience guards: `requireCustomer`, `requireTransporter`, `requireAdmin`.
+  * Backward compatibility aliases: `authUser`, `authCaptain`.
+* **Controlled Administrative Bootstrap (`backend/controllers/admin.controller.js`):**
+  * `POST /admin/bootstrap`: Initial administrative account setup protected by `x-admin-bootstrap-secret`. Permanently disabled once the initial admin account is created (`countDocuments() > 0`).
+  * No public admin registration endpoint exists (returns 404).
+  * Administrative dashboard metrics and user status toggle (`PATCH /admin/accounts/:id/status`).
+* **Frontend Authentication Integration Fixes:**
+  * Fixed `CaptainProtectWrapper.jsx` to resolve captain from either `response.data.captain` or direct `response.data`.
+  * Fixed `UserLogout.jsx` and `CaptainLogout.jsx` to execute logout requests inside `useEffect` (instead of component body render) and clear state and localStorage.
+  * Fixed vehicle type selection in `CaptainSignup.jsx` (aligned `'moto'` to `'motorcycle'` and added commercial cargo categories).
+  * Added protected `/captain/logout` route in `frontend/src/App.jsx`.
+* **Health Endpoint Privacy Correction (`backend/db/db.js` & `backend/app.js`):**
+  * Removed internal database host (`host`) and database name (`name`) from public `GET /health` endpoint responses.
+  * Verified response contains only high-level status (`status: 'UP'`, `isConnected: true`).
+
+#### 2. Validation & Quality Checks:
+* `backend`: Ran `npx jest tests/auth.test.js --runInBand --forceExit` — 24/24 tests passed (100% pass rate).
+* `backend`: Ran `npx jest tests/health.test.js --runInBand --forceExit` — 5/5 tests passed (100% pass rate).
+* `frontend`: Ran `npm run build` — compiled cleanly in 4.80s without errors.
+* Database Isolation: Test suite ran against isolated `cargoride_test_auth` test database. Local `uber` database verified intact on `127.0.0.1:27017` with 0 dropped collections.
+
+#### 3. Checkpoint Status:
+* **Commit 04 Completed:** `bc1fde2` (with security hardening verification)
+
+---
+
+### Commit 05: Commercial Vehicle Categories & Transporter Fleet Management
+* **Commit Hash:** `922baaa`
+* **Author:** Principal Software Architect & Backend Lead
+* **Date:** 2026-10-30
+
+#### 1. Objectives & Changes Implemented:
+* **Commercial Vehicle Categories Config & Schema (`backend/config/vehicleCategories.config.js`, `backend/models/vehicleCategory.model.js`):**
+  * Seeded 6 standardized Indian commercial vehicle categories: 3-Wheeler Cargo, Mini Truck (Tata Ace), Pickup Truck (Bolero Pickup), Light Commercial Vehicle (LCV), Medium Commercial Vehicle (MCV), and Heavy Commercial Vehicle (HCV).
+  * Enforced payload capacity (kg), deck dimensions (length, width, height in feet), cargo volume (cu.ft), and permit levels.
+* **Transporter Fleet Management (`backend/models/vehicle.model.js`, `backend/services/vehicle.service.js`, `backend/controllers/vehicle.controller.js`):**
+  * Dedicated multi-vehicle schema supporting transporter vehicle registration, registration number format validation (`^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$`), cargo body types, document references (RC, insurance, permit).
+  * Transporter ownership enforcement, document verification workflows, and admin inspection endpoints.
+* **Transporter Fleet UI (`frontend/src/pages/FleetManagement.jsx`):**
+  * Built complete commercial fleet portal with vehicle listing, category specification badges, registration modals, and status badges.
+  * Added navigation entry point from `CaptainHome.jsx` to `/captain/fleet`.
+
+#### 2. Validation:
+* `backend`: 25/25 vehicle fleet tests passed (`tests/vehicle.test.js`).
+* `frontend`: Production build passed cleanly in 7.9s.
+
+---
+
+### Commit 06: Commercial Cargo Booking & Shipment Consignment Lifecycle
+* **Commit Hash:** `19618f7`
+* **Author:** Senior Backend Engineer & System Architect
+* **Date:** 2026-10-31
+
+#### 1. Objectives & Changes Implemented:
+* **Structured Location Snapshot Schema (`backend/models/schemas/location.schema.js`):**
+  * Reusable location subdocument with street address, locality, city, state, postal code (validated for 6-digit Indian PIN format `^[1-9][0-9]{5}$`), contact person, and contact phone (10-digit Indian mobile `^[6-9][0-9]{9}$`).
+  * Latitude (-90 to 90) and Longitude (-180 to 180) boundary validation.
+  * Preserved as immutable snapshots in bookings and physical shipment consignments.
+* **Customer Cargo Booking Domain (`backend/models/cargoBooking.model.js`):**
+  * Generated unique, human-readable booking reference (`CRB-YYYYMMDD-XXXXX`).
+  * Cargo details: description, category, weight in kg (1 to 40,000 kg), package count, packaging type (cartons, crates, pallets, drums, sacks), fragile consignment flag, dimensions (length, width, height in ft) and volume calculation (cu. ft).
+  * Vehicle category preference reference and requested pickup timestamp.
+  * Booking lifecycle states: `REQUESTED`, `CONFIRMED`, `CANCELLED`, `EXPIRED`.
+* **Physical Shipment Consignment Domain (`backend/models/shipment.model.js`):**
+  * Represents physical freight consignment created only upon booking confirmation.
+  * Unique shipment reference (`CRS-YYYYMMDD-XXXXX`).
+  * Database-level 1:1 unique constraint on `{ booking: 1 }` ensuring exactly one shipment per booking.
+  * Initial shipment status: `CREATED` (Consignment Manifest Initialized).
+* **State Transition Engine & Concurrency Defense (`backend/services/bookingState.service.js`):**
+  * Enforces state machine: `REQUESTED` -> `CONFIRMED`, `REQUESTED` -> `CANCELLED`, `REQUESTED` -> `EXPIRED`, `CONFIRMED` -> `CANCELLED`.
+  * Protects against illegal transitions (`CANCELLED` -> `CONFIRMED`, `EXPIRED` -> `CONFIRMED`).
+  * Evaluated MongoDB topology: standalone deployment (`setName: undefined`). Multi-document replica set transactions are unavailable; implemented optimistic concurrency control using atomic compare-and-swap (`findOneAndUpdate({ _id, bookingStatus: 'REQUESTED' })`) combined with unique database index on `shipment.booking` and compensation rollback on shipment creation failure.
+* **Idempotency & Duplicate Submission Defense (`backend/models/idempotency.model.js`, `backend/services/booking.service.js`):**
+  * Idempotency keys scoped to authenticated customer (`{ key: 1, customer: 1 }`).
+  * SHA-256 payload fingerprinting: duplicate key with identical payload returns cached 201 response with `X-Cache-Lookup: HIT`; duplicate key with altered payload returns `409 Conflict`.
+  * 24-hour TTL index for automated record cleanup.
+* **REST APIs (`backend/routes/booking.routes.js`, `backend/routes/shipment.routes.js`, `backend/routes/admin.routes.js`):**
+  * Customer: `POST /bookings`, `GET /bookings`, `GET /bookings/:id`, `PATCH /bookings/:id/cancel`, `GET /shipments`, `GET /shipments/:id`.
+  * Admin: `GET /admin/bookings`, `GET /admin/bookings/:id`, `PATCH /admin/bookings/:id/status`, `GET /admin/shipments`.
+  * RBAC and strict object-level authorization ensuring customers only access their own bookings and shipments.
+* **Customer Frontend Booking & Tracking (`frontend/src/pages/BookCargo.jsx`, `frontend/src/pages/MyBookings.jsx`):**
+  * 6-step progressive commercial booking form with dynamic vehicle category loading, dimension-to-volume calculator, field validation, and idempotency key generation.
+  * Customer booking dashboard with status badges, full specification drawer, cancellation action, and shipment consignment tracking foundation (no fake GPS; carrier assignment notes for Commit 07).
+  * Connected routes in `App.jsx` wrapped in `UserProtectWrapper` and updated `Home.jsx` navigation bar.
+
+#### 2. Validation & Quality Checks:
+* `backend`: Ran full test suite — 4/4 test suites passed, 74/74 tests passed (100% pass rate).
+  * `tests/booking.test.js` (20/20 passed)
+  * `tests/vehicle.test.js` (25/25 passed)
+  * `tests/auth.test.js` (24/24 passed)
+  * `tests/health.test.js` (5/5 passed)
+* `frontend`: Ran `npm run build` — 123 modules transformed, compiled cleanly in 7.97s without errors.
+* Local MongoDB Database: Untouched; test suites executed against isolated test databases.
+
+#### 3. Checkpoint Status:
+* **Commit 06 Completed:** `19618f7` (with documentation checkpoint `5340867`)
+
+---
+
+### Commit 07: Dispatch Engine & Transporter Job Assignment
+* **Commit Hash:** `5e91a21`
+* **Author:** Senior Distributed-Systems Engineer, Logistics Domain Architect & Production Backend Developer
+* **Date:** 2026-10-31
+
+#### 1. Objectives & Changes Implemented:
+* **Dedicated Domain Models:**
+  * `DispatchJob` (`backend/models/dispatchJob.model.js`): Manages the full dispatch operation for a shipment. Unique reference (`CRD-YYYYMMDD-XXXXX`), status state machine (`PENDING`, `OFFERING`, `ASSIGNED`, `EXHAUSTED`, `CANCELLED`), required vehicle category, payload & dimensions, immutable location snapshots, batch sizing, attempt counts, and complete operational audit trail. Unique constraint on `shipment` ensures exactly 1 active dispatch job per shipment.
+  * `DispatchOffer` (`backend/models/dispatchOffer.model.js`): Represents job offers broadcasted to verified, eligible transporter vehicles. Unique reference (`CRO-YYYYMMDD-XXXXX`), status (`PENDING`, `ACCEPTED`, `REJECTED`, `EXPIRED`, `WITHDRAWN`), server-enforced `expiresAt` expiration timestamp, acceptance/rejection metadata. Compound indexes prevent duplicate active offers for the same dispatch job and vehicle.
+  * `DispatchAssignment` (`backend/models/dispatchAssignment.model.js`): Confirmed final assignment. Unique reference (`CRA-YYYYMMDD-XXXXX`), unique database constraint on `shipment` guaranteeing no shipment can ever have multiple active assignments, source tracking (`TRANSPORTER_ACCEPTED_OFFER`, `MANUAL_ADMIN_OVERRIDE`), and audit metadata.
+* **Vehicle Eligibility Engine (`backend/services/vehicleEligibility.service.js`):**
+  * Evaluates vehicle readiness against multi-dimensional commercial criteria: transporter active (`transporter.isActive === true`), vehicle active (`vehicle.isActive === true`), verification approved (`vehicle.verificationStatus === 'APPROVED'`), vehicle available (`vehicle.availabilityStatus === 'AVAILABLE'`), category compatibility, payload sufficiency, cargo dimensions fit, and special handling capabilities.
+  * Emits clear, diagnostic rejection codes: `TRANSPORTER_INACTIVE`, `VEHICLE_INACTIVE`, `VEHICLE_NOT_VERIFIED`, `VEHICLE_UNAVAILABLE`, `INSUFFICIENT_PAYLOAD_CAPACITY`, `DIMENSION_MISMATCH`, `CATEGORY_MISMATCH`, `HANDLING_INCAPABLE`.
+* **Proximity & Operational Ranking Engine (`backend/services/dispatchRanking.service.js`):**
+  * Haversine formula calculation when genuine coordinates exist for both pickup location and transporter.
+  * Deterministic operational ranking: Capacity fit factor (minimizing excess payload capacity wastage) and stable tie-breaking when coordinates are absent. No fabricated distance data.
+* **Concurrency Safety & Atomic Offer Acceptance (`backend/services/dispatch.service.js`):**
+  * Evaluated MongoDB topology: standalone deployment (`setName: undefined`). Multi-document replica set transactions are unavailable.
+  * Concurrency guaranteed via:
+    1. Atomic offer CAS: `DispatchOffer.findOneAndUpdate({ _id, transporter, status: 'PENDING', expiresAt: { $gt: now } }, { $set: { status: 'ACCEPTED' } })`.
+    2. Atomic dispatch job CAS: `DispatchJob.findOneAndUpdate({ _id, status: { $in: ['PENDING', 'OFFERING'] } }, { $set: { status: 'ASSIGNED', assignedTransporter, assignedVehicle } })`. If another transporter accepted first, offer is immediately reverted to `WITHDRAWN` and `409 Conflict` is returned.
+    3. Database-level unique constraint on `DispatchAssignment.shipment` (code 11000 rollback protection).
+    4. Post-assignment updates: `Shipment` records assigned carrier and vehicle (remains in `CREATED` status without prematurely setting `IN_TRANSIT`); `Vehicle` availability marked `ON_TRIP`; all remaining pending offers for the job atomically set to `WITHDRAWN`.
+* **Transporter & Admin REST APIs (`backend/routes/dispatch.routes.js`, `backend/routes/admin.routes.js`):**
+  * Transporter: `GET /dispatch/offers`, `GET /dispatch/offers/:id`, `POST /dispatch/offers/:id/accept`, `POST /dispatch/offers/:id/reject`, `GET /dispatch/jobs`, `GET /dispatch/jobs/:id`.
+  * Admin Operations: `POST /admin/dispatch/:shipmentId`, `GET /admin/dispatch/jobs`, `GET /admin/dispatch/jobs/:id`, `POST /admin/dispatch/jobs/:id/retry`, `POST /admin/dispatch/jobs/:id/cancel`.
+* **Frontend Transporter & Admin Experience:**
+  * `JobOffers.jsx` (`/captain/offers`): Live countdown timer component calculating remaining seconds until `expiresAt`, responsive freight specification cards, Accept & Reject actions with loading and error states.
+  * `AssignedJobs.jsx` (`/captain/assigned-jobs`): Active and historical assigned consignments, target fleet vehicle cards, route information, and operational guidance.
+  * `AdminDispatch.jsx` (`/admin/dispatch`): Operations console for monitoring dispatch jobs, broadcast offer history, retry exhausted attempts, and cancel dispatch operations.
+  * Updated `CaptainHome.jsx` with direct navigation buttons to "Job Offers", "Assigned Freight", and "Fleet".
+
+#### 2. Validation & Quality Checks:
+* `backend`: Ran full test suite — 5/5 test suites passed, 94/94 tests passed (100% pass rate).
+  * `tests/dispatch.test.js` (20/20 passed)
+  * `tests/booking.test.js` (20/20 passed)
+  * `tests/vehicle.test.js` (25/25 passed)
+  * `tests/auth.test.js` (24/24 passed)
+  * `tests/health.test.js` (5/5 passed)
+* `frontend`: Ran `npm run build` — 126 modules transformed, compiled cleanly in 6.53s without errors.
+* Local MongoDB Database: Untouched; test suites executed against isolated test databases.
+
+#### 3. Next Planned Action:
+* **Commit 08:** Socket.IO Real-Time Server Gateway Initialization with Authentication.
+
+
+

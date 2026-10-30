@@ -28,7 +28,8 @@ describe('Server Lifecycle & Health Checks', () => {
         status: 'connected',
         readyState: 1,
       });
-      expect(response.body.database.name).toBe('uber');
+      expect(response.body.database.host).toBeUndefined();
+      expect(response.body.database.name).toBeUndefined();
     });
   });
 
@@ -49,13 +50,14 @@ describe('Server Lifecycle & Health Checks', () => {
   });
 
   describe('Database Connection State & Idempotency', () => {
-    it('should accurately report database health metrics', () => {
+    it('should accurately report database health metrics without exposing internal names', () => {
       const health = getDatabaseHealth();
 
       expect(health.isConnected).toBe(true);
       expect(health.status).toBe('connected');
       expect(health.readyState).toBe(1);
-      expect(health.name).toBe('uber');
+      expect(health.host).toBeUndefined();
+      expect(health.name).toBeUndefined();
     });
 
     it('should reuse existing active connection when connectDB is called again', async () => {
