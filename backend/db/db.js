@@ -136,8 +136,6 @@ const getDatabaseHealth = () => {
     isConnected: state === 1,
     status: stateMap[state] || 'unknown',
     readyState: state,
-    host: mongoose.connection.host || null,
-    name: mongoose.connection.name || null,
   };
 };
 

@@ -162,3 +162,52 @@
 
 #### 3. Next Planned Action:
 * **Commit 04:** Unified User & Transporter schema with Role-Based Access Control (RBAC).
+
+---
+
+### [Commit 04] - Authentication Architecture, RBAC & Authorization Middleware
+* **Commit Hash:** Pending commit
+* **Author:** Principal Software Architect & Backend Lead
+* **Date:** 2026-10-30
+
+#### 1. Objectives & Changes Implemented:
+* **Canonical Role Definitions (`backend/constants/roles.js`):**
+  * Established canonical roles: `CUSTOMER`, `TRANSPORTER`, and `ADMIN`.
+  * Enforced across database schemas, JWT token payloads, authorization middleware, and frontend guards.
+* **Identity Architecture & Database Schemas:**
+  * Preserved existing separate collections (`users`, `captains`) to guarantee zero data loss, eliminate duplicate identities, and prevent account collisions.
+  * `User` (`backend/models/user.model.js`): Added immutable `role: 'CUSTOMER'`, `phone`, `isActive: Boolean (default: true)`, with updated JWT payload containing `id`, `_id`, `email`, and `role`.
+  * `Captain` (`backend/models/captain.model.js`): Added immutable `role: 'TRANSPORTER'`, `phone`, `isActive: Boolean (default: true)`, normalized commercial vehicle types, with updated JWT payload.
+  * `Admin` (`backend/models/admin.model.js`): Created dedicated administrative collection (`admins`) with role `'ADMIN'`, `isSuperAdmin`, `isActive`, and secure password hashing. Completely isolated from public registration.
+* **Centralized Authentication Service (`backend/services/auth.service.js`):**
+  * Consolidated bcrypt password hashing/comparison, JWT signing/verification, and account resolution by role and ID.
+  * Integrated token revocation checking and blacklisting via `blacklistTokenModel`.
+  * Configured standardized secure HTTP-only cookie options.
+* **Reusable RBAC & Authorization Middleware (`backend/middlewares/auth.middleware.js`):**
+  * `authenticateToken`: Validates JWT, verifies token is not revoked/blacklisted, confirms account is active (`isActive !== false`), attaches trusted identity to `req.auth`, `req.user`, and `req.account`.
+  * `authorizeRoles(...roles)`: Enforces role permissions (returns 403 Forbidden on insufficient role).
+  * `authorizeResourceOwner(getOwnerIdFn)`: Object-level authorization ensuring accounts can only access their own private resources unless an Admin.
+  * Convenience guards: `requireCustomer`, `requireTransporter`, `requireAdmin`.
+  * Backward compatibility aliases: `authUser`, `authCaptain`.
+* **Controlled Administrative Bootstrap (`backend/controllers/admin.controller.js`):**
+  * `POST /admin/bootstrap`: Initial administrative account setup protected by `x-admin-bootstrap-secret`. Permanently disabled once the initial admin account is created (`countDocuments() > 0`).
+  * No public admin registration endpoint exists (returns 404).
+  * Administrative dashboard metrics and user status toggle (`PATCH /admin/accounts/:id/status`).
+* **Frontend Authentication Integration Fixes:**
+  * Fixed `CaptainProtectWrapper.jsx` to resolve captain from either `response.data.captain` or direct `response.data`.
+  * Fixed `UserLogout.jsx` and `CaptainLogout.jsx` to execute logout requests inside `useEffect` (instead of component body render) and clear state and localStorage.
+  * Fixed vehicle type selection in `CaptainSignup.jsx` (aligned `'moto'` to `'motorcycle'` and added commercial cargo categories).
+  * Added protected `/captain/logout` route in `frontend/src/App.jsx`.
+* **Health Endpoint Privacy Correction (`backend/db/db.js` & `backend/app.js`):**
+  * Removed internal database host (`host`) and database name (`name`) from public `GET /health` endpoint responses.
+  * Verified response contains only high-level status (`status: 'UP'`, `isConnected: true`).
+
+#### 2. Validation & Quality Checks:
+* `backend`: Ran `npx jest tests/auth.test.js --runInBand --forceExit` — 24/24 tests passed (100% pass rate).
+* `backend`: Ran `npx jest tests/health.test.js --runInBand --forceExit` — 5/5 tests passed (100% pass rate).
+* `frontend`: Ran `npm run build` — compiled cleanly in 4.80s without errors.
+* Database Isolation: Test suite ran against isolated `cargoride_test_auth` test database. Local `uber` database verified intact on `127.0.0.1:27017` with 0 dropped collections.
+
+#### 3. Next Planned Action:
+* **Commit 05:** Fix legacy backend bugs (user.service syntax, controller-wrapper alignment).
+

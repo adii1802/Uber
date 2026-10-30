@@ -11,6 +11,7 @@ const { getDatabaseHealth } = require('./db/db');
 const logger = require('./utils/logger');
 const userRoutes = require('./routes/user.routes');
 const captainroutes = require('./routes/captain.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.get('/', (req, res) => {
 // Domain Routes
 app.use('/users', userRoutes);
 app.use('/captains', captainroutes);
+app.use('/admin', adminRoutes);
 
 // 404 Handler for unmatched routes
 app.use((req, res) => {
