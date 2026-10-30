@@ -281,7 +281,55 @@
 * `frontend`: Ran `npm run build` — 123 modules transformed, compiled cleanly in 7.97s without errors.
 * Local MongoDB Database: Untouched; test suites executed against isolated test databases.
 
+#### 3. Checkpoint Status:
+* **Commit 06 Completed:** `19618f7` (with documentation checkpoint `5340867`)
+
+---
+
+### Commit 07: Dispatch Engine & Transporter Job Assignment
+* **Commit Hash:** Pending
+* **Author:** Senior Distributed-Systems Engineer, Logistics Domain Architect & Production Backend Developer
+* **Date:** 2026-10-31
+
+#### 1. Objectives & Changes Implemented:
+* **Dedicated Domain Models:**
+  * `DispatchJob` (`backend/models/dispatchJob.model.js`): Manages the full dispatch operation for a shipment. Unique reference (`CRD-YYYYMMDD-XXXXX`), status state machine (`PENDING`, `OFFERING`, `ASSIGNED`, `EXHAUSTED`, `CANCELLED`), required vehicle category, payload & dimensions, immutable location snapshots, batch sizing, attempt counts, and complete operational audit trail. Unique constraint on `shipment` ensures exactly 1 active dispatch job per shipment.
+  * `DispatchOffer` (`backend/models/dispatchOffer.model.js`): Represents job offers broadcasted to verified, eligible transporter vehicles. Unique reference (`CRO-YYYYMMDD-XXXXX`), status (`PENDING`, `ACCEPTED`, `REJECTED`, `EXPIRED`, `WITHDRAWN`), server-enforced `expiresAt` expiration timestamp, acceptance/rejection metadata. Compound indexes prevent duplicate active offers for the same dispatch job and vehicle.
+  * `DispatchAssignment` (`backend/models/dispatchAssignment.model.js`): Confirmed final assignment. Unique reference (`CRA-YYYYMMDD-XXXXX`), unique database constraint on `shipment` guaranteeing no shipment can ever have multiple active assignments, source tracking (`TRANSPORTER_ACCEPTED_OFFER`, `MANUAL_ADMIN_OVERRIDE`), and audit metadata.
+* **Vehicle Eligibility Engine (`backend/services/vehicleEligibility.service.js`):**
+  * Evaluates vehicle readiness against multi-dimensional commercial criteria: transporter active (`transporter.isActive === true`), vehicle active (`vehicle.isActive === true`), verification approved (`vehicle.verificationStatus === 'APPROVED'`), vehicle available (`vehicle.availabilityStatus === 'AVAILABLE'`), category compatibility, payload sufficiency, cargo dimensions fit, and special handling capabilities.
+  * Emits clear, diagnostic rejection codes: `TRANSPORTER_INACTIVE`, `VEHICLE_INACTIVE`, `VEHICLE_NOT_VERIFIED`, `VEHICLE_UNAVAILABLE`, `INSUFFICIENT_PAYLOAD_CAPACITY`, `DIMENSION_MISMATCH`, `CATEGORY_MISMATCH`, `HANDLING_INCAPABLE`.
+* **Proximity & Operational Ranking Engine (`backend/services/dispatchRanking.service.js`):**
+  * Haversine formula calculation when genuine coordinates exist for both pickup location and transporter.
+  * Deterministic operational ranking: Capacity fit factor (minimizing excess payload capacity wastage) and stable tie-breaking when coordinates are absent. No fabricated distance data.
+* **Concurrency Safety & Atomic Offer Acceptance (`backend/services/dispatch.service.js`):**
+  * Evaluated MongoDB topology: standalone deployment (`setName: undefined`). Multi-document replica set transactions are unavailable.
+  * Concurrency guaranteed via:
+    1. Atomic offer CAS: `DispatchOffer.findOneAndUpdate({ _id, transporter, status: 'PENDING', expiresAt: { $gt: now } }, { $set: { status: 'ACCEPTED' } })`.
+    2. Atomic dispatch job CAS: `DispatchJob.findOneAndUpdate({ _id, status: { $in: ['PENDING', 'OFFERING'] } }, { $set: { status: 'ASSIGNED', assignedTransporter, assignedVehicle } })`. If another transporter accepted first, offer is immediately reverted to `WITHDRAWN` and `409 Conflict` is returned.
+    3. Database-level unique constraint on `DispatchAssignment.shipment` (code 11000 rollback protection).
+    4. Post-assignment updates: `Shipment` records assigned carrier and vehicle (remains in `CREATED` status without prematurely setting `IN_TRANSIT`); `Vehicle` availability marked `ON_TRIP`; all remaining pending offers for the job atomically set to `WITHDRAWN`.
+* **Transporter & Admin REST APIs (`backend/routes/dispatch.routes.js`, `backend/routes/admin.routes.js`):**
+  * Transporter: `GET /dispatch/offers`, `GET /dispatch/offers/:id`, `POST /dispatch/offers/:id/accept`, `POST /dispatch/offers/:id/reject`, `GET /dispatch/jobs`, `GET /dispatch/jobs/:id`.
+  * Admin Operations: `POST /admin/dispatch/:shipmentId`, `GET /admin/dispatch/jobs`, `GET /admin/dispatch/jobs/:id`, `POST /admin/dispatch/jobs/:id/retry`, `POST /admin/dispatch/jobs/:id/cancel`.
+* **Frontend Transporter & Admin Experience:**
+  * `JobOffers.jsx` (`/captain/offers`): Live countdown timer component calculating remaining seconds until `expiresAt`, responsive freight specification cards, Accept & Reject actions with loading and error states.
+  * `AssignedJobs.jsx` (`/captain/assigned-jobs`): Active and historical assigned consignments, target fleet vehicle cards, route information, and operational guidance.
+  * `AdminDispatch.jsx` (`/admin/dispatch`): Operations console for monitoring dispatch jobs, broadcast offer history, retry exhausted attempts, and cancel dispatch operations.
+  * Updated `CaptainHome.jsx` with direct navigation buttons to "Job Offers", "Assigned Freight", and "Fleet".
+
+#### 2. Validation & Quality Checks:
+* `backend`: Ran full test suite — 5/5 test suites passed, 94/94 tests passed (100% pass rate).
+  * `tests/dispatch.test.js` (20/20 passed)
+  * `tests/booking.test.js` (20/20 passed)
+  * `tests/vehicle.test.js` (25/25 passed)
+  * `tests/auth.test.js` (24/24 passed)
+  * `tests/health.test.js` (5/5 passed)
+* `frontend`: Ran `npm run build` — 126 modules transformed, compiled cleanly in 6.53s without errors.
+* Local MongoDB Database: Untouched; test suites executed against isolated test databases.
+
 #### 3. Next Planned Action:
-* **Commit 07:** Transporter Assignment, Dispatch Engine & Driver Matching.
+* **Commit 08:** Socket.IO Real-Time Server Gateway Initialization with Authentication.
+
 
 

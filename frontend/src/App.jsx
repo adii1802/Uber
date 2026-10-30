@@ -16,6 +16,9 @@ import CaptainLogout from './pages/CaptainLogout';
 import FleetManagement from './pages/FleetManagement';
 import BookCargo from './pages/BookCargo';
 import MyBookings from './pages/MyBookings';
+import JobOffers from './pages/JobOffers';
+import AssignedJobs from './pages/AssignedJobs';
+import AdminDispatch from './pages/AdminDispatch';
 import 'remixicon/fonts/remixicon.css';
 
 const App = () => {
@@ -75,6 +78,30 @@ const App = () => {
             <CaptainProtectWrapper>
               <FleetManagement />
             </CaptainProtectWrapper>
+          }
+        />
+        <Route
+          path="/captain/offers"
+          element={
+            <CaptainProtectWrapper>
+              <JobOffers />
+            </CaptainProtectWrapper>
+          }
+        />
+        <Route
+          path="/captain/assigned-jobs"
+          element={
+            <CaptainProtectWrapper>
+              <AssignedJobs />
+            </CaptainProtectWrapper>
+          }
+        />
+        <Route
+          path="/admin/dispatch"
+          element={
+            <UserProtectWrapper>
+              <AdminDispatch />
+            </UserProtectWrapper>
           }
         />
         <Route

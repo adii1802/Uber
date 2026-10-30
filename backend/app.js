@@ -16,6 +16,7 @@ const adminRoutes = require('./routes/admin.routes');
 const vehicleRoutes = require('./routes/vehicle.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const shipmentRoutes = require('./routes/shipment.routes');
+const dispatchRoutes = require('./routes/dispatch.routes');
 
 const app = express();
 
@@ -91,6 +92,7 @@ app.use('/admin', adminRoutes);
 app.use('/vehicles', vehicleRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/shipments', shipmentRoutes);
+app.use('/dispatch', dispatchRoutes);
 
 // 404 Handler for unmatched routes
 app.use((req, res) => {

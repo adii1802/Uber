@@ -46,7 +46,21 @@ useGSAP(function(){
       <div className='h-screen'>
       <div className='fixed p-6 top-0 flex items-center justify-between w-screen z-20'>
         <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="Logo" />
-        <div className='flex items-center gap-3'>
+        <div className='flex items-center gap-2.5'>
+          <Link
+            to="/captain/offers"
+            className='h-10 px-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md flex items-center justify-center rounded-full text-xs font-bold transition gap-1.5'
+          >
+            <i className='ri-radar-line text-sm'></i>
+            <span>Job Offers</span>
+          </Link>
+          <Link
+            to="/captain/assigned-jobs"
+            className='h-10 px-3.5 bg-white shadow-md flex items-center justify-center rounded-full text-xs font-semibold text-slate-800 hover:bg-slate-50 transition gap-1.5'
+          >
+            <i className='ri-file-list-3-line text-sm text-slate-600'></i>
+            <span>Assigned</span>
+          </Link>
           <Link
             to="/captain/fleet"
             className='h-10 px-3.5 bg-white shadow-md flex items-center justify-center rounded-full text-xs font-semibold text-slate-800 hover:bg-slate-50 transition gap-1.5'

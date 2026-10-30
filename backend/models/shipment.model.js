@@ -76,6 +76,21 @@ const shipmentSchema = new mongoose.Schema(
       default: 'CREATED',
       index: true,
     },
+    assignedTransporter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Captain',
+      default: null,
+      index: true,
+    },
+    assignedVehicle: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vehicle',
+      default: null,
+    },
+    assignedAt: {
+      type: Date,
+      default: null,
+    },
     timeline: [
       {
         status: { type: String, required: true },

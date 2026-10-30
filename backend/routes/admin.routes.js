@@ -70,4 +70,15 @@ router.patch(
 router.get('/shipments', requireAdmin, shipmentController.listAdminShipments);
 router.get('/shipments/:id', requireAdmin, shipmentController.getShipmentDetails);
 
+/**
+ * DISPATCH ENGINE OPERATIONS
+ */
+const dispatchController = require('../controllers/dispatch.controller');
+
+router.post('/dispatch/:shipmentId', requireAdmin, dispatchController.initiateDispatch);
+router.get('/dispatch/jobs', requireAdmin, dispatchController.listDispatchJobs);
+router.get('/dispatch/jobs/:id', requireAdmin, dispatchController.getDispatchJobDetails);
+router.post('/dispatch/jobs/:id/retry', requireAdmin, dispatchController.retryDispatch);
+router.post('/dispatch/jobs/:id/cancel', requireAdmin, dispatchController.cancelDispatch);
+
 module.exports = router;
