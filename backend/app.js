@@ -14,6 +14,8 @@ const userRoutes = require('./routes/user.routes');
 const captainroutes = require('./routes/captain.routes');
 const adminRoutes = require('./routes/admin.routes');
 const vehicleRoutes = require('./routes/vehicle.routes');
+const bookingRoutes = require('./routes/booking.routes');
+const shipmentRoutes = require('./routes/shipment.routes');
 
 const app = express();
 
@@ -87,6 +89,8 @@ app.use('/users', userRoutes);
 app.use('/captains', captainroutes);
 app.use('/admin', adminRoutes);
 app.use('/vehicles', vehicleRoutes);
+app.use('/bookings', bookingRoutes);
+app.use('/shipments', shipmentRoutes);
 
 // 404 Handler for unmatched routes
 app.use((req, res) => {
@@ -98,6 +102,22 @@ app.use((err, req, res, next) => {
   if (err.message && err.message.startsWith('Blocked by CORS')) {
     return res.status(403).json({ message: 'Forbidden: Untrusted request origin' });
   }
+
+  // Handle Mongoose Validation Errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      message: 'Validation failed',
+      errors: Object.values(err.errors || {}).map((e) => e.message),
+    });
+  }
+
+  // Handle Mongoose CastErrors (e.g. invalid ObjectId)
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      message: `Invalid format for field: ${err.path}`,
+    });
+  }
+
   logger.error('Unhandled request error: %s', err.stack || err.message);
   res.status(err.status || 500).json({
     message: err.message || 'Internal server error',

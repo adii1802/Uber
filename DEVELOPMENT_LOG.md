@@ -208,6 +208,80 @@
 * `frontend`: Ran `npm run build` — compiled cleanly in 4.80s without errors.
 * Database Isolation: Test suite ran against isolated `cargoride_test_auth` test database. Local `uber` database verified intact on `127.0.0.1:27017` with 0 dropped collections.
 
+#### 3. Checkpoint Status:
+* **Commit 04 Completed:** `bc1fde2` (with security hardening verification)
+
+---
+
+### Commit 05: Commercial Vehicle Categories & Transporter Fleet Management
+* **Commit Hash:** `922baaa`
+* **Author:** Principal Software Architect & Backend Lead
+* **Date:** 2026-10-30
+
+#### 1. Objectives & Changes Implemented:
+* **Commercial Vehicle Categories Config & Schema (`backend/config/vehicleCategories.config.js`, `backend/models/vehicleCategory.model.js`):**
+  * Seeded 6 standardized Indian commercial vehicle categories: 3-Wheeler Cargo, Mini Truck (Tata Ace), Pickup Truck (Bolero Pickup), Light Commercial Vehicle (LCV), Medium Commercial Vehicle (MCV), and Heavy Commercial Vehicle (HCV).
+  * Enforced payload capacity (kg), deck dimensions (length, width, height in feet), cargo volume (cu.ft), and permit levels.
+* **Transporter Fleet Management (`backend/models/vehicle.model.js`, `backend/services/vehicle.service.js`, `backend/controllers/vehicle.controller.js`):**
+  * Dedicated multi-vehicle schema supporting transporter vehicle registration, registration number format validation (`^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$`), cargo body types, document references (RC, insurance, permit).
+  * Transporter ownership enforcement, document verification workflows, and admin inspection endpoints.
+* **Transporter Fleet UI (`frontend/src/pages/FleetManagement.jsx`):**
+  * Built complete commercial fleet portal with vehicle listing, category specification badges, registration modals, and status badges.
+  * Added navigation entry point from `CaptainHome.jsx` to `/captain/fleet`.
+
+#### 2. Validation:
+* `backend`: 25/25 vehicle fleet tests passed (`tests/vehicle.test.js`).
+* `frontend`: Production build passed cleanly in 7.9s.
+
+---
+
+### Commit 06: Commercial Cargo Booking & Shipment Consignment Lifecycle
+* **Commit Hash:** Pending
+* **Author:** Senior Backend Engineer & System Architect
+* **Date:** 2026-10-31
+
+#### 1. Objectives & Changes Implemented:
+* **Structured Location Snapshot Schema (`backend/models/schemas/location.schema.js`):**
+  * Reusable location subdocument with street address, locality, city, state, postal code (validated for 6-digit Indian PIN format `^[1-9][0-9]{5}$`), contact person, and contact phone (10-digit Indian mobile `^[6-9][0-9]{9}$`).
+  * Latitude (-90 to 90) and Longitude (-180 to 180) boundary validation.
+  * Preserved as immutable snapshots in bookings and physical shipment consignments.
+* **Customer Cargo Booking Domain (`backend/models/cargoBooking.model.js`):**
+  * Generated unique, human-readable booking reference (`CRB-YYYYMMDD-XXXXX`).
+  * Cargo details: description, category, weight in kg (1 to 40,000 kg), package count, packaging type (cartons, crates, pallets, drums, sacks), fragile consignment flag, dimensions (length, width, height in ft) and volume calculation (cu. ft).
+  * Vehicle category preference reference and requested pickup timestamp.
+  * Booking lifecycle states: `REQUESTED`, `CONFIRMED`, `CANCELLED`, `EXPIRED`.
+* **Physical Shipment Consignment Domain (`backend/models/shipment.model.js`):**
+  * Represents physical freight consignment created only upon booking confirmation.
+  * Unique shipment reference (`CRS-YYYYMMDD-XXXXX`).
+  * Database-level 1:1 unique constraint on `{ booking: 1 }` ensuring exactly one shipment per booking.
+  * Initial shipment status: `CREATED` (Consignment Manifest Initialized).
+* **State Transition Engine & Concurrency Defense (`backend/services/bookingState.service.js`):**
+  * Enforces state machine: `REQUESTED` -> `CONFIRMED`, `REQUESTED` -> `CANCELLED`, `REQUESTED` -> `EXPIRED`, `CONFIRMED` -> `CANCELLED`.
+  * Protects against illegal transitions (`CANCELLED` -> `CONFIRMED`, `EXPIRED` -> `CONFIRMED`).
+  * Evaluated MongoDB topology: standalone deployment (`setName: undefined`). Multi-document replica set transactions are unavailable; implemented optimistic concurrency control using atomic compare-and-swap (`findOneAndUpdate({ _id, bookingStatus: 'REQUESTED' })`) combined with unique database index on `shipment.booking` and compensation rollback on shipment creation failure.
+* **Idempotency & Duplicate Submission Defense (`backend/models/idempotency.model.js`, `backend/services/booking.service.js`):**
+  * Idempotency keys scoped to authenticated customer (`{ key: 1, customer: 1 }`).
+  * SHA-256 payload fingerprinting: duplicate key with identical payload returns cached 201 response with `X-Cache-Lookup: HIT`; duplicate key with altered payload returns `409 Conflict`.
+  * 24-hour TTL index for automated record cleanup.
+* **REST APIs (`backend/routes/booking.routes.js`, `backend/routes/shipment.routes.js`, `backend/routes/admin.routes.js`):**
+  * Customer: `POST /bookings`, `GET /bookings`, `GET /bookings/:id`, `PATCH /bookings/:id/cancel`, `GET /shipments`, `GET /shipments/:id`.
+  * Admin: `GET /admin/bookings`, `GET /admin/bookings/:id`, `PATCH /admin/bookings/:id/status`, `GET /admin/shipments`.
+  * RBAC and strict object-level authorization ensuring customers only access their own bookings and shipments.
+* **Customer Frontend Booking & Tracking (`frontend/src/pages/BookCargo.jsx`, `frontend/src/pages/MyBookings.jsx`):**
+  * 6-step progressive commercial booking form with dynamic vehicle category loading, dimension-to-volume calculator, field validation, and idempotency key generation.
+  * Customer booking dashboard with status badges, full specification drawer, cancellation action, and shipment consignment tracking foundation (no fake GPS; carrier assignment notes for Commit 07).
+  * Connected routes in `App.jsx` wrapped in `UserProtectWrapper` and updated `Home.jsx` navigation bar.
+
+#### 2. Validation & Quality Checks:
+* `backend`: Ran full test suite — 4/4 test suites passed, 74/74 tests passed (100% pass rate).
+  * `tests/booking.test.js` (20/20 passed)
+  * `tests/vehicle.test.js` (25/25 passed)
+  * `tests/auth.test.js` (24/24 passed)
+  * `tests/health.test.js` (5/5 passed)
+* `frontend`: Ran `npm run build` — 123 modules transformed, compiled cleanly in 7.97s without errors.
+* Local MongoDB Database: Untouched; test suites executed against isolated test databases.
+
 #### 3. Next Planned Action:
-* **Commit 05:** Fix legacy backend bugs (user.service syntax, controller-wrapper alignment).
+* **Commit 07:** Transporter Assignment, Dispatch Engine & Driver Matching.
+
 

@@ -7,6 +7,8 @@ const { requireAdmin } = require('../middlewares/auth.middleware');
 
 
 const vehicleController = require('../controllers/vehicle.controller');
+const bookingController = require('../controllers/booking.controller');
+const shipmentController = require('../controllers/shipment.controller');
 
 /**
  * ADMIN LOGIN
@@ -51,5 +53,21 @@ router.patch(
   ],
   vehicleController.verifyVehicle
 );
+
+/**
+ * CARGO BOOKINGS & SHIPMENT ADMINISTRATION
+ */
+router.get('/bookings', requireAdmin, bookingController.listAdminBookings);
+router.get('/bookings/:id', requireAdmin, bookingController.getBookingDetails);
+router.patch(
+  '/bookings/:id/status',
+  [
+    requireAdmin,
+    body('status').isIn(['CONFIRMED', 'CANCELLED']).withMessage('Status must be CONFIRMED or CANCELLED'),
+  ],
+  bookingController.updateBookingStatus
+);
+router.get('/shipments', requireAdmin, shipmentController.listAdminShipments);
+router.get('/shipments/:id', requireAdmin, shipmentController.getShipmentDetails);
 
 module.exports = router;

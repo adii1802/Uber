@@ -14,6 +14,8 @@ import CaptainProtectWrapper from './pages/CaptainProtectWrapper';
 import CaptainRiding from './pages/CaptainRiding';
 import CaptainLogout from './pages/CaptainLogout';
 import FleetManagement from './pages/FleetManagement';
+import BookCargo from './pages/BookCargo';
+import MyBookings from './pages/MyBookings';
 import 'remixicon/fonts/remixicon.css';
 
 const App = () => {
@@ -32,6 +34,22 @@ const App = () => {
           element={
             <UserProtectWrapper>
               <Home />
+            </UserProtectWrapper>
+          }
+        />
+        <Route
+          path="/book-cargo"
+          element={
+            <UserProtectWrapper>
+              <BookCargo />
+            </UserProtectWrapper>
+          }
+        />
+        <Route
+          path="/my-bookings"
+          element={
+            <UserProtectWrapper>
+              <MyBookings />
             </UserProtectWrapper>
           }
         />

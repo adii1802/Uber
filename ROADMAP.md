@@ -6,9 +6,9 @@ PHASE 1: Foundation & Architecture (Commits 1 to 8)
 ├── [x] Commit 02: Dependency alignment (Socket.IO, Leaflet, Multer, Zod, testing libraries)
 ├── [x] Commit 03: Environment configuration, database pooling, and graceful shutdown
 ├── [x] Commit 04: Unified User & Transporter schema with Role-Based Access Control (RBAC)
-├── [ ] Commit 05: Fix legacy backend bugs (user.service syntax, controller-wrapper alignment)
-├── [ ] Commit 06: Commercial vehicle categories and vehicle fleet schemas with GeoJSON
-├── [ ] Commit 07: Cargo specification and cloud storage service for documents & cargo photos
+├── [x] Commit 05: Commercial vehicle categories and transporter fleet management
+├── [x] Commit 06: Commercial cargo booking and shipment consignment lifecycle
+├── [ ] Commit 07: Transporter assignment, dispatch engine, and driver matching
 └── [ ] Commit 08: Socket.IO real-time server gateway initialization with authentication
 
 PHASE 2: Customer Experience & Booking Lifecycle (Commits 9 to 17)
